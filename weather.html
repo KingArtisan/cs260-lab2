@@ -1,0 +1,132 @@
+<html>
+<head>
+<title>Ultimate Programmer Utility</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+    <script src="http://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="main.css">
+</head>
+<body class="blueBack">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12" align="center">
+                <br>
+                <h1>The Ultimate Programmer Utility</h1>
+                <hr>
+            </div>
+            <div class="col-md-12">
+                This site serves two purposes:
+                <ul>
+                    <li>First, because we know you don't go outside, we've provided a way to find out what the weather is like in any city in Utah (we'll even suggest a city based on what you type), so you can fool your mother into thinking that you don't spend all of your time indoors.</li>
+                    <li>Second, because we know what you're really here for, the builtin StackOverflow search is at the bottom of the page.</li>
+                </ul>
+                <hr>
+                <h2 align="center">Weather</h2>
+                <br>
+            </div>
+            <div class="col-md-6 border-right">
+                <form>
+                    Enter A Utah City: <input type="text" id="cityField" value="" autocomplete="off">
+                    <br><br>
+                    Suggestion: <span id="txtHint">Empty</span>
+                    <br><br>
+                    <input id="weatherButton" type="submit" value="Submit">
+                </form>
+            </div>
+            <div class="col-md-6">
+                <p class="small-bottom-margin inline medium-padding-bottom">Current Weather for:</p>
+                <input id="displayCity" class="short no-top-padding no-resize" readonly="readonly" value="No City">
+                <br>
+                <div id="weather">No weather</div>
+            </div>
+            <div class="col-md-12"  align="center">
+                <hr>
+                <h2>StackOverflow Search</h2>
+                <br>
+                <form>
+                    <input class="wide" type="text" id="soSearch" value="" autocomplete="off">
+                    <input id="searchButton" type="submit" value="Search">
+                </form>
+                <p><h5>Search results:</h5><span id="searchResults" align="left">Empty</span></p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- JQuery -->
+    <script>
+        $(document).ready(function() {
+            $( "#cityField" ).keyup(function() {
+              var url = "http://bioresearch.byu.edu/cs260/jquery/getcity.cgi?q="+$("#cityField").val();
+              $.getJSON(url,function(data) {
+                var everything;
+                everything = "<ul>";
+                $.each(data, function(i,item) {
+                  everything += "<li> "+data[i].city;
+                });
+                everything += "</ul>";
+                $("#txtHint").html(everything);
+              })
+              .done(function() { console.log('getJSON request succeeded!'); })
+              .fail(function(jqXHR, textStatus, errorThrown) { 
+                console.log('getJSON request failed! ' + textStatus); 
+                console.log("incoming "+jqXHR.responseText);
+              })
+              .always(function() { console.log('getJSON request ended!');
+              });
+            });
+            $("#weatherButton").click(function(e){
+                var value = $("#cityField").val();
+                e.preventDefault();
+                $("#displayCity").val(value);
+                var myurl= "https://api.openweathermap.org/data/2.5/weather?units=imperial&q="+value+",us&appid=b926e2ed2cf89c13950553ce6f52840e";
+                console.log(myurl);
+                $.ajax({
+                    url : myurl,
+                    dataType : "json",
+                    success : function(parsed_json) {
+                        var location = parsed_json['name'];
+                        var weather = parsed_json['weather'][0]['main'];
+                        var temp = parsed_json['main']['temp'];
+                        var weather_icon = parsed_json['weather'][0]['icon'];
+                        var humidity = parsed_json['main']['humidity'];
+                        var temp_min = parsed_json['main']['temp_min'];
+                        var temp_max = parsed_json['main']['temp_max'];
+                        var wind_speed = parsed_json['wind']['speed'];
+                        everything = "<img src=\"http://openweathermap.org/img/w/" + weather_icon + ".png\"/>"
+                        everything += "<ul>";
+                        everything += "<li>Location: " + location;
+                        everything += "<li>Weather: " + weather + " (" + temp + "&#8457;)";
+                        everything += "<li>Low: " + temp_min + "&#8457; | High: " + temp_max + "&#8457;";
+                        everything += "<li>Humidity: " + humidity + "%";
+                        everything += "<li>Wind: " + wind_speed + " mph";
+                        everything += "</ul>";
+                        $("#weather").html(everything);
+                    }
+                });
+            });
+            $("#searchButton").click(function(e){
+                var value = $("#soSearch").val();
+                e.preventDefault();
+         
+                var searchurl= "https://api.stackexchange.com/2.2/search?order=desc&sort=activity&intitle="+value+"&site=stackoverflow";
+                console.log(searchurl);
+                $.ajax({
+                    url : searchurl,
+                    dataType : "json",
+                    success : function(parsed_json) {
+                        var everything;
+                        everything = "<ul>";
+                        $.each(parsed_json["items"], function(i,result) {
+                            everything += "<li> <a href='"+parsed_json["items"][i].link+"' target='_blank'>"+parsed_json['items'][i].title+"</a> (Score: "+parsed_json['items'][i].score+")";
+                        });
+                        everything += "</ul>";
+                        
+                        $("#searchResults").html(everything);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
